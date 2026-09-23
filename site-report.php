@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: Site Report
-Plugin URI:  https://github.com/yourusername/site-report
+Plugin URI:  https://github.com/UjjwalShres/Site-Report
 Description: Audits your WordPress site for database, performance, security, and file system stats, with one-click export to HTML, PDF, JSON, CSV, or TXT.
 Version:     1.0.0
 Author:      Ujjwal Shrestha
