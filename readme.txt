@@ -1,5 +1,5 @@
 === Site Report ===
-Contributors: yourwporgusername
+Contributors: ujjwalshres
 Tags: audit, database, performance, security, reports
 Requires at least: 6.5
 Tested up to: 7.1
