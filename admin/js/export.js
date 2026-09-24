@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const radios = document.querySelectorAll('input[name="sr_export_type"]');
     const downloadBtn = document.getElementById('sr-download');
     const previewBtn = document.getElementById('sr-preview');
+    const nonceField = document.getElementById('sr-export-nonce');
 
     function getSelectedType() {
         let value = 'html';
@@ -37,7 +38,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         window.location.href =
             ajaxurl.replace('admin-ajax.php', 'admin-post.php') +
-            '?action=sr_export&type=' + type;
+            '?action=sr_export&type=' + type +
+            '&_wpnonce=' + nonceField.value;
     });
 
     // Preview
@@ -45,7 +47,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         previewBtn.href =
             ajaxurl.replace('admin-ajax.php', 'admin-post.php') +
-            '?action=sr_export&type=preview';
+            '?action=sr_export&type=preview' +
+            '&_wpnonce=' + nonceField.value;
     });
 
 });

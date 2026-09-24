@@ -11,6 +11,7 @@ class Site_Report_DB {
     public static function get_db_stats() {
         global $wpdb;
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- live table sizes are the entire point of a site-health report; caching would show stale data. The full report is already cached for 5 minutes via the sr_last_report transient.
         $tables = $wpdb->get_results("SHOW TABLE STATUS", ARRAY_A);
 
         $data = [];
@@ -79,6 +80,7 @@ class Site_Report_DB {
     public static function get_orphan_tables() {
         global $wpdb;
 
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- listing current tables to detect orphans; caching would risk missing a table added/removed since the cache was set. No core WP API returns the raw table list.
         $all_tables = $wpdb->get_col("SHOW TABLES");
         $core_tables = self::get_core_tables();
 
@@ -101,16 +103,40 @@ class Site_Report_DB {
     */
     public static function get_post_revisions() {
         global $wpdb;
-        return $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}posts WHERE post_type='revision'");
+
+        $count = wp_cache_get('sr_post_revisions', 'site-report');
+        if (false === $count) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- no core WP API returns a revision count; result is cached below.
+            $count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}posts WHERE post_type='revision'");
+            wp_cache_set('sr_post_revisions', $count, 'site-report', 60);
+        }
+
+        return $count;
     }
 
     public static function get_transients() {
         global $wpdb;
-        return $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->options} WHERE option_name LIKE '_transient_%'");
+
+        $count = wp_cache_get('sr_transients_count', 'site-report');
+        if (false === $count) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- no core WP API returns a transient count; result is cached below.
+            $count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->options} WHERE option_name LIKE '_transient_%'");
+            wp_cache_set('sr_transients_count', $count, 'site-report', 60);
+        }
+
+        return $count;
     }
 
     public static function get_spam_comments() {
         global $wpdb;
-        return $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->comments} WHERE comment_approved='spam'");
+
+        $count = wp_cache_get('sr_spam_comments', 'site-report');
+        if (false === $count) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- no core WP API returns a spam comment count; result is cached below.
+            $count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->comments} WHERE comment_approved='spam'");
+            wp_cache_set('sr_spam_comments', $count, 'site-report', 60);
+        }
+
+        return $count;
     }
 }

@@ -1,7 +1,6 @@
 <?php
 if (!defined('ABSPATH')) exit;
-define('SR_ADMIN_URL', plugin_dir_url(__FILE__));
-define('SR_ADMIN_PATH', plugin_dir_path(__FILE__));
+define('SITE_REPORT_ADMIN_URL', plugin_dir_url(__FILE__));
 
 
 class Site_Report_Admin {
@@ -16,6 +15,12 @@ class Site_Report_Admin {
             'dashicons-analytics',
             3
         );
+    }
+
+    private static function badge_class($state) {
+        if ($state === 'good') return 'badge-ok';
+        if ($state === 'warn') return 'badge-warn';
+        return 'badge-bad';
     }
 
     private static function get_report() {
@@ -38,7 +43,7 @@ class Site_Report_Admin {
 
     $tooltip_html = '
     <div class="sr-tooltip">
-        <span class="sr-tooltip-icon sr-tooltip-icon-'.$state.'">i</span>
+        <span class="sr-tooltip-icon sr-tooltip-icon-'.esc_attr($state).'">i</span>
         <div class="sr-tooltip-content">';
 
     foreach ($tooltip as $key => $message) {
@@ -52,7 +57,7 @@ class Site_Report_Admin {
             $icon = '<span class="bad">X </span>';
         }
 
-        $tooltip_html .= '<p>'.$icon.$message.'</p>';
+        $tooltip_html .= '<p>'.$icon.esc_html($message).'</p>';
     }
 
     $tooltip_html .= '
@@ -61,11 +66,11 @@ class Site_Report_Admin {
     }
 
 
-    return '
+    echo '
     <div class="sr-card">
-        <h3>'.$title.'</h3>
-        <span class="sr-value">'.$value.'</span>
-        <div class="sr-card-'.$state.'"></div>
+        <h3>'.esc_html($title).'</h3>
+        <span class="sr-value">'.esc_html($value).'</span>
+        <div class="sr-card-'.esc_attr($state).'"></div>
         '.$tooltip_html.'
     </div>';
 }
@@ -82,7 +87,8 @@ class Site_Report_Admin {
         'export' => 'Export',
     ];
 
-    $current_tab = $_GET['tab'] ?? 'db';
+    // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only tab switch, not a form submission or state change.
+    $current_tab = isset($_GET['tab']) ? sanitize_key(wp_unslash($_GET['tab'])) : 'db';
 
     /* ======================
        HEADER + LOGO
@@ -90,7 +96,7 @@ class Site_Report_Admin {
 
     echo '<div class="sr-header-container">
         <div class="sr-header">
-            <img src="' . esc_url(SR_ADMIN_URL . 'assets/site-report-logo-dark.png') . '">
+            <img src="' . esc_url(SITE_REPORT_ADMIN_URL . 'assets/site-report-logo-dark.png') . '">
             <div class="sr-brand-name">Site Report</div>
           </div>';
 
@@ -106,7 +112,7 @@ class Site_Report_Admin {
 
         $active = ($current_tab === $key) ? 'sr-tab-active' : '';
 
-        echo '<a class="sr-tab '.$active.'" href="?page=site-report&tab='.$key.'">'.$label.'</a>';
+        echo '<a class="sr-tab '.esc_attr($active).'" href="'.esc_url('?page=site-report&tab='.$key).'">'.esc_html($label).'</a>';
     }
 
     echo '</div>
@@ -156,7 +162,7 @@ class Site_Report_Admin {
     ====================== */
 
     echo '<div class="sr-card-grid">';
-    echo self::card(
+    self::card(
             'Total DB Size',
             $size_mb. ' MB',
             $req_size_mb['state'],
@@ -167,7 +173,7 @@ class Site_Report_Admin {
             ]
         );
 
-    echo self::card(
+    self::card(
             'Overhead',
             $overhead_mb. ' MB',
             $req_overhead_size_mb['state'],
@@ -178,7 +184,7 @@ class Site_Report_Admin {
             ]
         );
 
-    echo self::card(
+    self::card(
             'Revisions',
             $revisions,
             $req_revisions['state'],
@@ -189,7 +195,7 @@ class Site_Report_Admin {
             ]
         );
 
-    echo self::card(
+    self::card(
             'Transients',
             $transients,
             $req_transients['state'],
@@ -200,7 +206,7 @@ class Site_Report_Admin {
             ]
         );
 
-    echo self::card(
+    self::card(
             'Spam Comments',
             $spam,
             $req_spam['state'],
@@ -231,18 +237,18 @@ class Site_Report_Admin {
 
     foreach($tables as $table){
         echo '<tr>
-            <td>'.$table['name'].'</td>
-            <td>'.$table['rows'].'</td>
-            <td>'.round($table['size']/1024/1024,2).'</td>
-            <td>'.round($table['overhead']/1024/1024,2).'</td>
+            <td>'.esc_html($table['name']).'</td>
+            <td>'.esc_html($table['rows']).'</td>
+            <td>'.esc_html(round($table['size']/1024/1024,2)).'</td>
+            <td>'.esc_html(round($table['overhead']/1024/1024,2)).'</td>
         </tr>';
     }
 
     echo '<tr class="sr-total-row">
         <td>Total</td>
-        <td>'.$total_rows.'</td>
-        <td>'.$size_mb.'</td>
-        <td>'.$overhead_mb.'</td>
+        <td>'.esc_html($total_rows).'</td>
+        <td>'.esc_html($size_mb).'</td>
+        <td>'.esc_html($overhead_mb).'</td>
     </tr>';
 
     echo '</tbody></table>';
@@ -259,7 +265,7 @@ class Site_Report_Admin {
     } else {
         echo '<div class="orphan-tables"><strong>Orphan Tables Detected:</strong><ul>';
         foreach($orphans as $table){
-            echo '<li>'.$table.'</li>';
+            echo '<li>'.esc_html($table).'</li>';
         }
         echo '</ul></div>';
     }
@@ -282,7 +288,7 @@ class Site_Report_Admin {
 
         echo '<div class="sr-card-grid">';
 
-        echo self::card(
+        self::card(
             'Requests',
             $data['requests'],
             $req_health['state'],
@@ -292,7 +298,7 @@ class Site_Report_Admin {
                 'bad'  => '> 120'
             ]
         );
-        echo self::card(
+        self::card(
             'Page Size',
             $data['page_size_mb'] . ' MB',
             $size_health['state'],
@@ -302,7 +308,7 @@ class Site_Report_Admin {
                 'bad'  => '> 4MB'
             ]
         );
-        echo self::card(
+        self::card(
             'Cache',
             $data['cache_plugin'],
             $cache_state,
@@ -312,7 +318,7 @@ class Site_Report_Admin {
                 'bad'  => 'No Cache Plugin'
             ]
             );
-        echo self::card('Load Time', 'Test Needed', 'warn');
+        self::card('Load Time', 'Test Needed', 'warn');
 
         echo '</div>';
 
@@ -344,7 +350,7 @@ class Site_Report_Admin {
                         $value_mb = $value_bytes / (1024*1024);
                         $label = ($value_mb >= 1) ? round($value_mb, 1).' MB' : round($value_bytes / 1024, 0).' KB';
                     ?>
-                <div class="y-label"><?php echo $label; ?></div>
+                <div class="y-label"><?php echo esc_html($label); ?></div>
                 <?php endfor; ?>
             </div>
 
@@ -353,14 +359,14 @@ class Site_Report_Admin {
                 <?php foreach($largest as $item):
                         $height_percent = ($item['size'] / ($y_steps * $step_value)) * 100;
                     ?>
-                <div class="bar" style="height: <?php echo $height_percent; ?>%">
-                    <div class="bar-value"><?php echo size_format($item['size']); ?></div>
+                <div class="bar" style="height: <?php echo esc_attr($height_percent); ?>%">
+                    <div class="bar-value"><?php echo esc_html(size_format($item['size'])); ?></div>
                 </div>
                 <?php endforeach; ?>
 
                 <div class="bar-label-group">
                     <?php foreach($largest as $label): ?>
-                    <span class="bar-label"><?php echo $label['name']; ?></span>
+                    <span class="bar-label"><?php echo esc_html($label['name']); ?></span>
                     <?php endforeach; ?>
                 </div>
             </div>
@@ -370,7 +376,7 @@ class Site_Report_Admin {
 
     <div class="bar-side-section">
         <?php 
-            echo self::card(
+            self::card(
                 'PHP Version',
                 $data['php_version'],
                 $php_health['state'],
@@ -381,7 +387,7 @@ class Site_Report_Admin {
                 ]
             );
 
-            echo self::card(
+            self::card(
                 'Memory Usage',
                 $data['memory_limit'] . 'B',
                 $memory_health['state'],
@@ -413,31 +419,31 @@ class Site_Report_Admin {
 
     echo '<div class="sr-card-grid">';
 
-    echo self::card(
+    self::card(
         'Security Plugins',
         $security['value'],
         $security['state'],
         $security['tooltip']
     );
-    echo self::card(
+    self::card(
         'Firewall', 
         $firewall_status['value'],
         $firewall_status['state'],
         $firewall_status['tooltip']
     );
-    echo self::card(
+    self::card(
         'Outdated Plugins', 
         $outdated_plugins_status['value'],
         $outdated_plugins_status['state'],
         $outdated_plugins_status['tooltip']
         );
-    echo self::card(
+    self::card(
         'Outdated Themes', 
         $outdated_themes_status['value'],
         $outdated_themes_status['state'],
         $outdated_themes_status['tooltip']
         );
-    echo self::card('Login Safety', $login_safety_status['value'], $login_safety_status['state'], $login_safety_status['tooltip']);
+    self::card('Login Safety', $login_safety_status['value'], $login_safety_status['state'], $login_safety_status['tooltip']);
 
     echo '</div>';
 
@@ -447,7 +453,7 @@ class Site_Report_Admin {
     if ($data['suspicious']) {
         echo '<ul>';
         foreach ($data['suspicious'] as $file) {
-            echo '<li>'.$file.'</li>';
+            echo '<li>'.esc_html($file).'</li>';
         }
         echo '</ul>';
     } else {
@@ -457,7 +463,7 @@ class Site_Report_Admin {
     echo '</div>
     
     <div class="sr-security-side-section">';
-        echo self::card(
+        self::card(
             'Debug',
             $data['debug_mode']['value'],
             $data['debug_mode']['state'],
@@ -467,7 +473,7 @@ class Site_Report_Admin {
             ]
         );
 
-        // echo self::card(
+        // self::card(
         //     'Debug Log',
         //     $data['debug_log']['value'],
         //     $data['debug_log']['state'],
@@ -477,7 +483,7 @@ class Site_Report_Admin {
         //     ]
         // );
 
-        echo self::card(
+        self::card(
             'File Editor',
             $data['file_edit']['value'],
             $data['file_edit']['state'],
@@ -650,29 +656,29 @@ class Site_Report_Admin {
 
     echo '<div class="sr-card-grid">';
 
-    //echo self::card('Total Site Size', size_format($data['total']));
-    echo self::card(
+    //self::card('Total Site Size', size_format($data['total']));
+    self::card(
         'Total Site Size',
         $site_size_mb_status['value'] . ' MB',
         $site_size_mb_status['state'],
         $site_size_mb_status['tooltip']
     );
-    //echo self::card('Uploads', size_format($data['uploads']));
-    echo self::card(
+    //self::card('Uploads', size_format($data['uploads']));
+    self::card(
         'Uploads',
         $uploads_size_status['value'] . ' MB',
         $uploads_size_status['state'],
         $uploads_size_status['tooltip']
     );
-    //echo self::card('Temp/Cache', size_format($data['temp']));
-    echo self::card(
+    //self::card('Temp/Cache', size_format($data['temp']));
+    self::card(
         'Temp/Cache',
         $temp_size_status['value'] . ' MB',
         $temp_size_status['state'],
         $temp_size_status['tooltip']
     );
-    //echo self::card('Log Files', count($data['logs']));
-    echo self::card(
+    //self::card('Log Files', count($data['logs']));
+    self::card(
         'Log Files',
         $log_size_status['value'] . ' MB',
         $log_size_status['state'],
@@ -687,7 +693,7 @@ class Site_Report_Admin {
     if ($data['logs']['files']) {
         echo '<ul>';
         foreach ($data['logs']['files'] as $log) {
-            echo '<li>'.$log['name'].' ('. size_format($log['size']).')</li>';
+            echo '<li>'.esc_html($log['name']).' ('. esc_html(size_format($log['size'])).')</li>';
         }
         echo '</ul>';
     } else {
@@ -699,7 +705,7 @@ class Site_Report_Admin {
     if ($data['large']) {
         echo '<ul>';
         foreach ($data['large'] as $file) {
-            echo '<li>'.$file['name'].' ('. size_format($file['size']).')</li>';
+            echo '<li>'.esc_html($file['name']).' ('. esc_html(size_format($file['size'])).')</li>';
         }
         echo '</ul>';
     } else {
@@ -710,7 +716,7 @@ class Site_Report_Admin {
     
     <div class="sr-files-side-section">';
 
-    echo self::gauge($data['total']);                    
+    self::gauge($data['total']);
 
     echo '</div>';
 
@@ -775,12 +781,12 @@ private static function gauge($bytes) {
     <path d="M20 100 A80 80 0 0 1 180 100" stroke="#eee" stroke-width="14" fill="none" />
 
     <!-- Value arc -->
-    <path d="M20 100 A80 80 0 0 1 180 100" stroke="<?php echo $color; ?>" stroke-width="14" fill="none"
-        stroke-dasharray="<?php echo $percentage * 2.83; ?> 999" stroke-linecap="round" />
+    <path d="M20 100 A80 80 0 0 1 180 100" stroke="<?php echo esc_attr($color); ?>" stroke-width="14" fill="none"
+        stroke-dasharray="<?php echo esc_attr($percentage * 2.83); ?> 999" stroke-linecap="round" />
 
     <!-- Center Value -->
     <text x="100" y="85" text-anchor="middle" class="sr-gauge-value">
-        <?php echo $display; ?>
+        <?php echo esc_html($display); ?>
     </text>
     <text x="100" y="100" text-anchor="middle" class="sr-gauge-text">
         Total Site Size
@@ -789,7 +795,7 @@ private static function gauge($bytes) {
 </svg>
 
 <?php
-    return ob_get_clean();
+    echo ob_get_clean(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG markup; dynamic values above are escaped individually.
 }
 
 
@@ -887,19 +893,19 @@ private static function scan_large_files($path, $limit = 10485760) {
 
     echo '<div class="sr-card-grid">';
 
-    echo self::card(
+    self::card(
         'Active Plugins',
         $plugin_count_status['value'],
         $plugin_count_status['state'],
         $plugin_count_status['tooltip']
     );
-    echo self::card(
+    self::card(
         'Inactive Plugins',
         $inactive_plugin_count_status['value'],
         $inactive_plugin_count_status['state'],
         $inactive_plugin_count_status['tooltip']
     );
-    echo self::card(
+    self::card(
         'WordPress Version',
         $wp_version_status['value'],
         $wp_version_status['state'],
@@ -921,8 +927,8 @@ private static function scan_large_files($path, $limit = 10485760) {
             : '<span class="sr-plugin-inactive">Inactive</span>';
 
         echo "<tr>
-                <td>{$p['name']}</td>
-                <td>{$p['version']}</td>
+                <td>" . esc_html($p['name']) . "</td>
+                <td>" . esc_html($p['version']) . "</td>
                 <td>{$status}</td>
             </tr>";
     }
@@ -941,8 +947,8 @@ private static function scan_large_files($path, $limit = 10485760) {
             : '<span class="sr-theme-inactive">Inactive</span>';
 
         echo "<tr>
-                <td>{$t['name']}</td>
-                <td>{$t['version']}</td>
+                <td>" . esc_html($t['name']) . "</td>
+                <td>" . esc_html($t['version']) . "</td>
                 <td>{$status}</td>
             </tr>";
     }
@@ -1046,6 +1052,8 @@ private static function compatibility_check() {
 
         </div>';
 
+        echo '<input type="hidden" id="sr-export-nonce" value="' . esc_attr(wp_create_nonce('sr_export')) . '">';
+
         /* ACTION BUTTONS */
         echo '<div class="sr-export-actions">
             <button id="sr-download" class="button button-primary">Download</button>
@@ -1103,7 +1111,9 @@ public static function handle_export() {
         wp_die('No permission');
     }
 
-    $type = $_GET['type'] ?? 'html';
+    check_admin_referer('sr_export');
+
+    $type = isset($_GET['type']) ? sanitize_key(wp_unslash($_GET['type'])) : 'html';
 
     $report = self::collect_full_report();
 
@@ -1158,7 +1168,7 @@ private static function export_csv($data) {
 header('Content-Type: text/csv');
 header('Content-Disposition: attachment; filename=site-report.csv');
 
-$out = fopen('php://output', 'w');
+$out = fopen('php://output', 'w'); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- streaming a CSV download to php://output, not a real file; WP_Filesystem cannot target this stream.
 
 foreach ($data as $section => $values) {
 
@@ -1191,10 +1201,11 @@ foreach ($values as $k => $v) {
 fputcsv($out, []);
 }
 
-fclose($out);
+fclose($out); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- closing the php://output stream opened above, not a real file handle.
 }
 
 private static function export_txt($data) {
+    // phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- this is a plain-text (.txt) file download, not HTML; esc_html() would corrupt the output (e.g. turning "&" into "&amp;").
 
     header('Content-Type: text/plain');
     header('Content-Disposition: attachment; filename=site-report.txt');
@@ -1220,6 +1231,7 @@ private static function export_txt($data) {
 
         echo "\n\n";
     }
+    // phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
 }
 
 private static function preview_html($data) {
@@ -1249,7 +1261,7 @@ private static function export_pdf($data) {
 }
 
 private static function render_html_template($data) {
-    $date = date('Y-m-d H:i:s');
+    $date = wp_date('Y-m-d H:i:s');
     ?>
 <!DOCTYPE html>
 <html>
@@ -1418,10 +1430,10 @@ private static function render_html_template($data) {
 
     <div class="header">
         <div class="sr-header">
-            <img class="sr-logo" src="<?php echo esc_url(SR_ADMIN_URL . 'assets/site-report-logo-white.png'); ?>">
+            <img class="sr-logo" src="<?php echo esc_url(SITE_REPORT_ADMIN_URL . 'assets/site-report-logo-white.png'); ?>">
         </div>
         <h1>Site Report</h1>
-        <small>Generated on <?php echo $date; ?></small>
+        <small>Generated on <?php echo esc_html($date); ?></small>
     </div>
 
     <div class="container">
@@ -1439,34 +1451,34 @@ private static function render_html_template($data) {
             <div class="cards">
                 <div class="card">
                     <h3>Total Tables</h3>
-                    <p><?php echo count($db['tables']); ?></p>
+                    <p><?php echo esc_html(count($db['tables'])); ?></p>
                 </div>
 
                 <div class="card">
                     <h3>Total Database Size</h3>
-                    <p><?php echo $db['total_size_mb'];  ?> MB</p>
+                    <p><?php echo esc_html($db['total_size_mb']);  ?> MB</p>
                 </div>
             </div>
 
             <div class="cards cards-margin">
                 <div class="card">
                     <h3>Overhead</h3>
-                    <p><?php echo $db['total_overhead_mb'];  ?> MB</p>
+                    <p><?php echo esc_html($db['total_overhead_mb']);  ?> MB</p>
                 </div>
 
                 <div class="card">
                     <h3>Revisions</h3>
-                    <p><?php echo $db['revisions'];  ?></p>
+                    <p><?php echo esc_html($db['revisions']);  ?></p>
                 </div>
 
                 <div class="card">
                     <h3>Transients</h3>
-                    <p><?php echo $db['transients'];  ?></p>
+                    <p><?php echo esc_html($db['transients']);  ?></p>
                 </div>
 
                 <div class="card">
                     <h3>Spam Comments</h3>
-                    <p><?php echo $db['spam_comments'];  ?></p>
+                    <p><?php echo esc_html($db['spam_comments']);  ?></p>
                 </div>
             </div>
 
@@ -1480,16 +1492,16 @@ private static function render_html_template($data) {
 
                 <?php foreach($db['tables'] as $t): ?>
                 <tr>
-                    <td><?php echo $t['name']; ?></td>
-                    <td><?php echo $t['rows']; ?></td>
-                    <td><?php echo $t['size']; ?></td>
+                    <td><?php echo esc_html($t['name']); ?></td>
+                    <td><?php echo esc_html($t['rows']); ?></td>
+                    <td><?php echo esc_html($t['size']); ?></td>
                 </tr>
                 <?php endforeach; ?>
 
                 <tr class="total">
                     <td>TOTAL</td>
-                    <td><?php echo $db['total_rows']; ?></td>
-                    <td><?php echo $db['total_size_mb']; ?> MB</td>
+                    <td><?php echo esc_html($db['total_rows']); ?></td>
+                    <td><?php echo esc_html($db['total_size_mb']); ?> MB</td>
                 </tr>
             </table>
         </div>
@@ -1508,29 +1520,29 @@ private static function render_html_template($data) {
             <div class="cards">
                 <div class="card">
                     <h3>Requests</h3>
-                    <p><?php echo $perf['requests']; ?></p>
+                    <p><?php echo esc_html($perf['requests']); ?></p>
                 </div>
 
                 <div class="card">
                     <h3>Page Size</h3>
-                    <p><?php echo $perf['page_size_mb']; ?> MB</p>
+                    <p><?php echo esc_html($perf['page_size_mb']); ?> MB</p>
                 </div>
             </div>
 
             <div class="cards cards-margin">
                 <div class="card">
                     <h3>Cache</h3>
-                    <p><?php echo $perf['cache_plugin']; ?></p>
+                    <p><?php echo esc_html($perf['cache_plugin']); ?></p>
                 </div>
 
                 <div class="card">
                     <h3>PHP Version</h3>
-                    <p><?php echo $perf['php_version']; ?></p>
+                    <p><?php echo esc_html($perf['php_version']); ?></p>
                 </div>
 
                 <div class="card">
                     <h3>Memory Usage</h3>
-                    <p><?php echo $perf['memory_limit']; ?></p>
+                    <p><?php echo esc_html($perf['memory_limit']); ?></p>
                 </div>
             </div>
 
@@ -1544,8 +1556,8 @@ private static function render_html_template($data) {
                 <?php foreach($perf['largest_resources'] as $t): ?>
                 <tr>
                     <?php $resource_size = round($t['size']/(1024*1024), 2) ?>
-                    <td><?php echo $t['name']; ?></td>
-                    <td><?php echo $resource_size; ?> MB</td>
+                    <td><?php echo esc_html($t['name']); ?></td>
+                    <td><?php echo esc_html($resource_size); ?> MB</td>
                 </tr>
                 <?php endforeach; ?>
             </table>
@@ -1562,12 +1574,6 @@ private static function render_html_template($data) {
             $outdated_plugins_status = Site_Report_Health::outdated_plugins_status($s['updates']['plugins']);
             $outdated_themes_status  = Site_Report_Health::outdated_themes_status($s['updates']['themes']);
             $login_safety_status     = Site_Report_Health::login_safety_status($s['login']);
-
-            function badge_from_state($state){
-                if ($state === 'good') return 'badge-ok';
-                if ($state === 'warn') return 'badge-warn';
-                return 'badge-bad';
-            }
             ?>
 
         <div class="section">
@@ -1576,31 +1582,31 @@ private static function render_html_template($data) {
             <div class="cards">
                 <div class="card">
                     <h3>Security Plugins</h3>
-                    <p class="<?php echo badge_from_state($security_plugins_status['state']); ?>"><?php echo $security_plugins_status['value']; ?></p>
+                    <p class="<?php echo esc_attr(self::badge_class($security_plugins_status['state'])); ?>"><?php echo esc_html($security_plugins_status['value']); ?></p>
                 </div>
                 <div class="card">
                     <h3>Firewall</h3>
-                    <p><?php echo $s['firewall']; ?></p>
+                    <p><?php echo esc_html($s['firewall']); ?></p>
                 </div>
                 <div class="card">
                     <h3>Outdated Plugins</h3>
-                    <p class="<?php echo badge_from_state($outdated_plugins_status['state']); ?>"><?php echo $outdated_plugins_status['value']; ?></p>
+                    <p class="<?php echo esc_attr(self::badge_class($outdated_plugins_status['state'])); ?>"><?php echo esc_html($outdated_plugins_status['value']); ?></p>
                 </div>
                 <div class="card">
                     <h3>Outdated Themes</h3>
-                    <p class="<?php echo badge_from_state($outdated_themes_status['state']); ?>"><?php echo $outdated_themes_status['value']; ?></p>
+                    <p class="<?php echo esc_attr(self::badge_class($outdated_themes_status['state'])); ?>"><?php echo esc_html($outdated_themes_status['value']); ?></p>
                 </div>
                 <div class="card">
                     <h3>Login Safety</h3>
-                    <p class="<?php echo badge_from_state($login_safety_status['state']); ?>"><?php echo $login_safety_status['value']; ?></p>
+                    <p class="<?php echo esc_attr(self::badge_class($login_safety_status['state'])); ?>"><?php echo esc_html($login_safety_status['value']); ?></p>
                 </div>
                 <div class="card">
                     <h3>Debug Mode</h3>
-                    <p class="<?php echo badge_from_state($s['debug_mode']['state']); ?>"><?php echo $s['debug_mode']['value']; ?></p>
+                    <p class="<?php echo esc_attr(self::badge_class($s['debug_mode']['state'])); ?>"><?php echo esc_html($s['debug_mode']['value']); ?></p>
                 </div>
                 <div class="card">
                     <h3>File Editor</h3>
-                    <p class="<?php echo badge_from_state($s['file_edit']['state']); ?>"><?php echo $s['file_edit']['value']; ?></p>
+                    <p class="<?php echo esc_attr(self::badge_class($s['file_edit']['state'])); ?>"><?php echo esc_html($s['file_edit']['value']); ?></p>
                 </div>
             </div>
 
@@ -1628,22 +1634,22 @@ private static function render_html_template($data) {
             <div class="cards">
                 <div class="card">
                     <h3>Total Site Size</h3>
-                    <p><?php echo size_format($f['total']); ?></p>
+                    <p><?php echo esc_html(size_format($f['total'])); ?></p>
                 </div>
 
                 <div class="card">
                     <h3>Uploads</h3>
-                    <p><?php echo size_format($f['uploads']); ?></p>
+                    <p><?php echo esc_html(size_format($f['uploads'])); ?></p>
                 </div>
 
                 <div class="card">
                     <h3>Temp/Cache</h3>
-                    <p><?php echo size_format($f['temp']); ?></p>
+                    <p><?php echo esc_html(size_format($f['temp'])); ?></p>
                 </div>
 
                 <div class="card">
                     <h3>Log Files</h3>
-                    <p><?php echo count($f['logs']['files']); ?></p>
+                    <p><?php echo esc_html(count($f['logs']['files'])); ?></p>
                 </div>
             </div>
 
@@ -1656,8 +1662,8 @@ private static function render_html_template($data) {
                 </tr>
                 <?php foreach($f['logs']['files'] as $log): ?>
                 <tr>
-                    <td><?php echo $log['name']; ?></td>
-                    <td><?php echo size_format($log['size']); ?></td>
+                    <td><?php echo esc_html($log['name']); ?></td>
+                    <td><?php echo esc_html(size_format($log['size'])); ?></td>
                 </tr>
                 <?php endforeach; ?>
             </table>
@@ -1673,8 +1679,8 @@ private static function render_html_template($data) {
                 </tr>
                 <?php foreach($f['large'] as $file): ?>
                 <tr>
-                    <td><?php echo $file['name']; ?></td>
-                    <td><?php echo size_format($file['size']); ?></td>
+                    <td><?php echo esc_html($file['name']); ?></td>
+                    <td><?php echo esc_html(size_format($file['size'])); ?></td>
                 </tr>
                 <?php endforeach; ?>
             </table>
@@ -1693,12 +1699,12 @@ private static function render_html_template($data) {
             <div class="cards">
                 <div class="card">
                     <h3>Active Plugins</h3>
-                    <p><?php echo count(array_filter($p['plugins'], fn($pl) => $pl['active'])); ?></p>
+                    <p><?php echo esc_html(count(array_filter($p['plugins'], fn($pl) => $pl['active']))); ?></p>
                 </div>
 
                 <div class="card">
                     <h3>Inactive Plugins</h3>
-                    <p><?php echo count($p['plugins']) - count(array_filter($p['plugins'], fn($pl) => $pl['active'])); ?>
+                    <p><?php echo esc_html(count($p['plugins']) - count(array_filter($p['plugins'], fn($pl) => $pl['active']))); ?>
                     </p>
                 </div>
             </div>
@@ -1712,9 +1718,9 @@ private static function render_html_template($data) {
                 </tr>
                 <?php foreach($p['plugins'] as $pl): ?>
                 <tr>
-                    <td><?php echo $pl['name']; ?></td>
-                    <td><?php echo $pl['version']; ?></td>
-                    <td><?php echo $pl['active'] ? 'Active' : 'Inactive'; ?></td>
+                    <td><?php echo esc_html($pl['name']); ?></td>
+                    <td><?php echo esc_html($pl['version']); ?></td>
+                    <td><?php echo esc_html($pl['active'] ? 'Active' : 'Inactive'); ?></td>
                 </tr>
                 <?php endforeach; ?>
             </table>
@@ -1729,9 +1735,9 @@ private static function render_html_template($data) {
                 </tr>
                 <?php foreach($p['themes'] as $t): ?>
                 <tr>
-                    <td><?php echo $t['name']; ?></td>
-                    <td><?php echo $t['version']; ?></td>
-                    <td><?php echo $t['active'] ? 'Active' : 'Inactive'; ?></td>
+                    <td><?php echo esc_html($t['name']); ?></td>
+                    <td><?php echo esc_html($t['version']); ?></td>
+                    <td><?php echo esc_html($t['active'] ? 'Active' : 'Inactive'); ?></td>
                 </tr>
                 <?php endforeach; ?>
             </table>
